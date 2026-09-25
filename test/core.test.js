@@ -5,6 +5,7 @@ import {
   splitToday, parseMood, localDateStr, prevDateStr,
 } from "../core.js";
 import { EchoResponder, truncate } from "../responder.js";
+import { SAMPLE } from "../script.js";
 import { toMarkdown, exportFilename } from "../export.js";
 
 const fixed = () => new EchoResponder({ random: () => 0 });
@@ -141,6 +142,15 @@ test("localDateStr はローカル時刻で日付を作る", () => {
   assert.equal(localDateStr(new Date(2026, 11, 31, 23, 59)), "2026-12-31");
   assert.equal(prevDateStr("2026-03-01"), "2026-02-28");
   assert.equal(prevDateStr("2026-01-01"), "2025-12-31");
+});
+
+test("使い方の会話例は最後まで進み、再質問が出ない", () => {
+  let { session } = begin(SAMPLE.prev);
+  for (const text of SAMPLE.inputs) session = step(session, text, fixed()).session;
+  assert.ok(isDone(session));
+  const who = session.log.map((m) => m.who);
+  assert.equal(who.filter((w) => w === "me").length, SAMPLE.inputs.length);
+  assert.ok(session.log.some((m) => m.text.startsWith("昨日の予定：")));
 });
 
 // ---- responder.js ----

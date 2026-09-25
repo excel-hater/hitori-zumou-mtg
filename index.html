@@ -18,6 +18,7 @@
 <div class="app">
   <header class="bar">
     <h1 id="date">ひとり朝会</h1>
+    <button type="button" id="help-btn">使い方</button>
     <button type="button" id="export-btn">書き出し</button>
     <button type="button" id="reset-btn">やり直し</button>
   </header>
@@ -30,6 +31,38 @@
       <button type="button" id="download-btn">ダウンロード</button>
       <button type="button" id="close-btn">閉じる</button>
     </div>
+  </section>
+  <section id="help" class="help" hidden>
+    <div class="row">
+      <h2>使い方</h2>
+      <button type="button" id="help-close">閉じる</button>
+    </div>
+    <p>毎朝、決まった質問に順番に答えるだけの「ひとり朝会」です。</p>
+    <h3>会話の例</h3>
+    <div id="sample" class="sample"></div>
+    <p class="sub">相手は AI ではありません。あなたの言葉をほぼそのまま使って相づちを打つだけです。毎朝同じ順番で聞かれ、言葉にしてみること自体に意味があります。</p>
+    <h3>入力のしかた</h3>
+    <ul>
+      <li>Enter で送信、Shift+Enter で改行。送信ボタンでも送れます</li>
+      <li>今日やることは3つまで。1行に1つか、「、」「,」で区切ります</li>
+      <li>気分は 1〜5 の数字で答えます（全角でも大丈夫）</li>
+    </ul>
+    <h3>書き出し</h3>
+    <ul>
+      <li>「書き出し」で今日の記録を Markdown で表示します</li>
+      <li>「コピー」でクリップボードへ。うまくいかないときは文字が選択された状態になるので、そのままコピーしてください</li>
+      <li>「ダウンロード」で <code>asakai-日付.md</code> を保存します</li>
+    </ul>
+    <h3>記録の保存</h3>
+    <ul>
+      <li>記録はこのブラウザの中（localStorage）にだけ保存され、どこにも送信されません</li>
+      <li>朝会は1日1回。途中で閉じたりリロードしても続きから再開します</li>
+      <li>前日の記録があれば、最初に「昨日の予定」を表示します</li>
+      <li>別の端末やブラウザとは共有されません。ブラウザの閲覧データを消すと記録も消えます。残したい日は書き出してください</li>
+      <li>プライベートブラウズなど保存できない環境では、画面上部にお知らせが出ます（朝会は最後まで進められます）</li>
+      <li>「やり直し」で今日の朝会を最初からやり直せます</li>
+    </ul>
+    <p class="row"><button type="button" id="help-close2">閉じる</button></p>
   </section>
   <main id="log" class="log" role="log" aria-live="polite"></main>
   <form id="form" class="input">

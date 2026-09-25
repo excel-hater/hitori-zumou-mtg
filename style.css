@@ -43,7 +43,16 @@ body {
   padding-top: max(6px, env(safe-area-inset-top));
   border-bottom: 1px solid var(--line);
 }
-h1 { flex: 1; margin: 0; font-size: 17px; }
+.bar { flex-wrap: wrap; }
+h1 { flex: 1; margin: 0; font-size: 17px; white-space: nowrap; }
+@media (max-width: 480px) { h1 { flex-basis: 100%; } }
+.help { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 16px 16px; }
+.help h2 { flex: 1; margin: 0; font-size: 17px; }
+.help h3 { margin: 20px 0 8px; font-size: 16px; }
+.help ul { margin: 0; padding-left: 1.3em; }
+.help li { margin: 4px 0; }
+.sample { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.sub { color: var(--sub); font-size: 14px; }
 button {
   min-height: 44px;
   min-width: 44px;

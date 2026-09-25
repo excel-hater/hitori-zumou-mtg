@@ -34,3 +34,14 @@ export const STEPS = [
   },
   { id: "done", prompt: "今日の朝会は終わりました", input: null, final: true },
 ];
+
+// 「使い方」で見せる会話例の回答。実際の core.js と Responder に流して表示する
+export const SAMPLE = {
+  prev: { answers: { today: ["見積書の作成", "経費の精算"] } },
+  inputs: [
+    "見積書を作ってA社に送った",
+    "請求書の発行\nB社への返信\n週報を書く",
+    "B社からの返事がまだ来ない",
+    "4",
+  ],
+};

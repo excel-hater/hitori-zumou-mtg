@@ -1,6 +1,7 @@
 // DOM 操作、イベント、保存の呼び出し（ブラウザ専用）
 import { createSession, step, isDone, localDateStr, prevDateStr } from "./core.js";
 import { EchoResponder } from "./responder.js";
+import { SAMPLE } from "./script.js";
 import { toMarkdown, exportFilename } from "./export.js";
 import * as storage from "./storage.js";
 
@@ -12,6 +13,7 @@ const sendBtn = $("send");
 const exportBox = $("export");
 const exportText = $("export-text");
 const exportMsg = $("export-msg");
+const helpBox = $("help");
 
 // app.js は respond() を持つオブジェクトにだけ依存する
 const responder = new EchoResponder();
@@ -19,12 +21,12 @@ const responder = new EchoResponder();
 let session;
 let busy = false;
 
-function bubble(who, text, extra) {
+function bubble(who, text, extra, box = logEl) {
   const el = document.createElement("div");
   el.className = "msg " + who + (extra ? " " + extra : "");
   el.textContent = text;
-  logEl.appendChild(el);
-  logEl.scrollTop = logEl.scrollHeight;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
   return el;
 }
 
@@ -70,6 +72,7 @@ async function start() {
   $("notice").hidden = storage.isPersistent();
   logEl.textContent = "";
   exportBox.hidden = true;
+  showHelp(false);
   session.log.forEach((m) => bubble(m.who, m.text));
   updateInput();
   if (!session.log.length) await run("");
@@ -111,7 +114,39 @@ $("reset-btn").addEventListener("click", () => {
   start();
 });
 
+// 使い方：会話例は実際の core と Responder に例の回答を流して作る
+function renderSample() {
+  const box = $("sample");
+  if (box.firstChild) return;
+  const r = new EchoResponder({ random: () => 0 });
+  let s = step(createSession(localDateStr(), SAMPLE.prev), "", r).session;
+  SAMPLE.inputs.forEach((text) => (s = step(s, text, r).session));
+  s.log.forEach((m) => bubble(m.who, m.text, "", box));
+}
+
+function showHelp(open) {
+  helpBox.hidden = !open;
+  logEl.hidden = open;
+  form.hidden = open;
+  if (open) {
+    renderSample();
+    exportBox.hidden = true;
+    helpBox.scrollTop = 0;
+  } else {
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+}
+
+$("help-btn").addEventListener("click", () => showHelp(helpBox.hidden));
+["help-close", "help-close2"].forEach((id) =>
+  $(id).addEventListener("click", () => {
+    showHelp(false);
+    if (!isDone(session)) input.focus();
+  })
+);
+
 $("export-btn").addEventListener("click", () => {
+  showHelp(false);
   exportText.value = toMarkdown(session);
   exportMsg.textContent = "";
   exportBox.hidden = false;
