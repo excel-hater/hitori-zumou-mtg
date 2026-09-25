@@ -19,7 +19,7 @@
 <div class="app">
   <header class="bar">
     <h1 id="date">ひとり朝会</h1>
-    <button type="button" id="voice-btn" aria-pressed="false" aria-label="音声の読み上げ" title="音声の読み上げ（オフ）">🔈</button>
+    <button type="button" id="voice-btn" aria-pressed="false" aria-label="音声の読み上げ" title="音声の読み上げ（オフ）">🔇</button>
     <button type="button" id="help-btn">使い方</button>
     <button type="button" id="export-btn">書き出し</button>
     <button type="button" id="reset-btn">やり直し</button>
@@ -39,10 +39,12 @@
     </button>
   </div>
   <section id="export" class="export" hidden>
-    <textarea id="export-text" rows="8" readonly aria-label="書き出す内容"></textarea>
+    <div class="export-box">
+      <textarea id="export-text" rows="8" readonly aria-label="書き出す内容"></textarea>
+      <button type="button" id="copy-btn">コピー</button>
+    </div>
     <p id="export-msg" class="export-msg" role="status"></p>
     <div class="row">
-      <button type="button" id="copy-btn">コピー</button>
       <button type="button" id="download-btn">ダウンロード</button>
       <button type="button" id="close-btn">閉じる</button>
     </div>
@@ -64,7 +66,7 @@
     </ul>
     <h3>音声</h3>
     <ul>
-      <li>🔈 を押すと、アヒルが質問を読み上げます（もう一度押すとオフ）。はじめはオフです</li>
+      <li>🔇 を押すと 🔊 になり、アヒルが質問を読み上げます（もう一度押すとオフ）。はじめはオフです</li>
       <li>アヒルをタップすると、最後の質問をもう一度読みます</li>
       <li>端末に入っている日本語の声だけを使い、文字を外部に送りません。日本語の声がない端末では、読み上げずに口だけ動きます</li>
       <li>オン／オフの設定はこのブラウザに保存されます</li>

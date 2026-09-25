@@ -82,9 +82,12 @@ button[type=submit] { background: var(--accent); border-color: var(--accent); co
 @media (max-height: 500px) {
   .duck { width: 44px; height: 44px; }
 }
+#voice-btn { font-size: 22px; padding: 0 10px; }
 #voice-btn[aria-pressed=true] { border-color: var(--accent); }
 .export { padding: 8px 12px; border-bottom: 1px solid var(--line); }
-.export textarea { height: 10em; }
+.export-box { position: relative; }
+.export textarea { height: 10em; padding-right: 104px; }
+#copy-btn { position: absolute; top: 6px; right: 20px; } /* スクロールバーを避ける */
 .export-msg { margin: 4px 0; min-height: 1.2em; font-size: 14px; color: var(--sub); }
 .log {
   flex: 1;

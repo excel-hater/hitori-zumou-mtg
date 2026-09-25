@@ -33,7 +33,7 @@ const canSpeak = () => voiceOn && speaker.hasVoice();
 
 function updateVoice() {
   voiceBtn.hidden = !speaker.supported;
-  voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
+  voiceBtn.textContent = voiceOn ? "🔊" : "🔇";
   voiceBtn.setAttribute("aria-pressed", String(voiceOn));
   voiceBtn.title = "音声の読み上げ（" + (voiceOn ? "オン" : "オフ") + "）";
 }
