@@ -21,6 +21,8 @@ export function createSession(dateStr, prevSession) {
     answers: { yesterday: "", today: [], blocker: "", mood: null },
     log: [],
     prevToday: prevToday.slice(),
+    edited: null, // 保存した Markdown。null なら会話から作る
+    memo: "",
   };
 }
 
