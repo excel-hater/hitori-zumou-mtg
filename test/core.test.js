@@ -6,7 +6,7 @@ import {
 } from "../core.js";
 import { EchoResponder, truncate } from "../responder.js";
 import { SAMPLE } from "../script.js";
-import { toMarkdown, exportFilename } from "../export.js";
+import { toMarkdown, exportFilename, contentOf, hasContent } from "../export.js";
 
 const fixed = () => new EchoResponder({ random: () => 0 });
 
@@ -45,6 +45,16 @@ test("全ステップを通して done に到達する", () => {
   assert.ok(all.some((m) => m.includes("17時にまた開いてね")));
   assert.ok(all.some((m) => m.includes("1. A") && m.includes("2. B")));
   assert.equal(all.at(-1), "今日の朝会は終わりました");
+});
+
+test("session は編集内容とメモを持ち、step の後も残る", () => {
+  const s0 = createSession("2026-09-25", null);
+  assert.equal(s0.edited, null);
+  assert.equal(s0.memo, "");
+  let { session } = step({ ...s0, edited: "# 手で書いた", memo: "メモ" }, "", fixed());
+  session = step(session, "資料作成", fixed()).session;
+  assert.equal(session.edited, "# 手で書いた");
+  assert.equal(session.memo, "メモ");
 });
 
 test("done の後に入力しても何も起きない", () => {
@@ -216,4 +226,24 @@ test("Markdown：途中のセッションと複数行の回答", () => {
   const md = toMarkdown(session);
   assert.ok(md.includes("- 昨日：一行目 / 二行目\n"));
   assert.ok(md.includes("- 今日：\n- 詰まり：\n- 気分：\n"));
+});
+
+test("contentOf：編集した内容があればそれを、なければ会話から作る", () => {
+  const { session } = runAll(["資料作成", "A", "なし", "3"]);
+  assert.equal(contentOf(session), toMarkdown(session));
+  assert.equal(contentOf({ ...session, edited: "# 自分で書いた\n" }), "# 自分で書いた\n");
+  assert.equal(contentOf({ ...session, edited: "" }), "");
+  // edited がない古い記録
+  const old = { ...session };
+  delete old.edited;
+  assert.equal(contentOf(old), toMarkdown(session));
+});
+
+test("hasContent：回答・編集・メモのどれかがあれば true", () => {
+  const { session } = begin(); // あいさつだけ
+  assert.equal(hasContent(session), false);
+  assert.equal(hasContent(step(session, "資料作成", fixed()).session), true);
+  assert.equal(hasContent({ ...session, memo: "メモ" }), true);
+  assert.equal(hasContent({ ...session, edited: "# 朝会" }), true);
+  assert.equal(hasContent({ date: "2026-09-01" }), false); // 欠けた古い記録でも落ちない
 });

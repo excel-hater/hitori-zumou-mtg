@@ -2,19 +2,20 @@
 import { createSession, step, isDone, localDateStr, prevDateStr } from "./core.js";
 import { EchoResponder } from "./responder.js";
 import { SAMPLE } from "./script.js";
-import { toMarkdown, exportFilename } from "./export.js";
+import { toMarkdown, exportFilename, contentOf, hasContent } from "./export.js";
 import * as storage from "./storage.js";
 import { createSpeaker } from "./voice.js";
+import { monthGrid, addMonth } from "./calendar.js";
 
 const $ = (id) => document.getElementById(id);
 const logEl = $("log");
 const form = $("form");
 const input = $("text");
 const sendBtn = $("send");
-const exportBox = $("export");
-const exportText = $("export-text");
-const exportMsg = $("export-msg");
-const helpBox = $("help");
+const editText = $("edit-text");
+const editMsg = $("edit-msg");
+const memoEl = $("memo");
+const panels = { help: $("help"), calendar: $("calendar"), editor: $("editor") };
 
 // app.js は respond() を持つオブジェクトにだけ依存する
 const responder = new EchoResponder();
@@ -96,9 +97,7 @@ async function start() {
   $("date").textContent = "朝会 " + today;
   $("notice").hidden = storage.isPersistent();
   logEl.textContent = "";
-  exportBox.hidden = true;
-  showHelp(false);
-  speaker.cancel();
+  showPanel(null);
   session.log.forEach((m) => bubble(m.who, m.text));
   updateInput();
   if (!session.log.length) await run("");
@@ -138,10 +137,44 @@ input.addEventListener("keydown", (e) => {
 input.addEventListener("input", autosize);
 
 $("reset-btn").addEventListener("click", () => {
-  if (busy || !confirm("今日の朝会を最初からやり直しますか？")) return;
-  storage.removeSession(session.date);
+  if (busy || !confirm("今日の会話を最初からやり直しますか？（編集した内容は消え、メモは残ります）")) return;
+  const { date, memo } = session;
+  storage.removeSession(date);
+  if (memo) storage.saveSession({ ...createSession(date, storage.loadSession(prevDateStr(date))), memo });
   start();
 });
+
+// ---- パネル（使い方・カレンダー・編集）。開いている間は会話ログと入力欄を隠す ----
+let panel = null;
+
+function showPanel(name) {
+  panel = name;
+  Object.keys(panels).forEach((k) => (panels[k].hidden = k !== name));
+  logEl.hidden = !!name;
+  form.hidden = !!name;
+  duck.parentNode.hidden = !!name; // パネル中はアヒルを隠して場所を空ける
+  speaker.cancel();
+  if (name) panels[name].scrollTop = 0;
+  else logEl.scrollTop = logEl.scrollHeight;
+}
+
+function closePanel() {
+  showPanel(null);
+  if (!isDone(session)) input.focus();
+}
+
+const fmtDate = (d) => Number(d.slice(5, 7)) + "月" + Number(d.slice(8)) + "日";
+
+// 今日なら会話中の session、それ以外は保存済みのもの（なければ空の記録を作る）
+function getDay(date) {
+  if (date === session.date) return session;
+  return storage.loadSession(date) || createSession(date, null);
+}
+
+function putDay(s) {
+  if (s.date === session.date) session = s;
+  storage.saveSession(s);
+}
 
 // 使い方：会話例は実際の core と Responder に例の回答を流して作る
 function renderSample() {
@@ -153,27 +186,12 @@ function renderSample() {
   s.log.forEach((m) => bubble(m.who, m.text, "", box));
 }
 
-function showHelp(open) {
-  helpBox.hidden = !open;
-  logEl.hidden = open;
-  form.hidden = open;
-  if (open) {
-    speaker.cancel();
-    renderSample();
-    exportBox.hidden = true;
-    helpBox.scrollTop = 0;
-  } else {
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-}
-
-$("help-btn").addEventListener("click", () => showHelp(helpBox.hidden));
-["help-close", "help-close2"].forEach((id) =>
-  $(id).addEventListener("click", () => {
-    showHelp(false);
-    if (!isDone(session)) input.focus();
-  })
-);
+$("help-btn").addEventListener("click", () => {
+  if (panel === "help") return closePanel();
+  renderSample();
+  showPanel("help");
+});
+["help-close", "help-close2", "cal-close"].forEach((id) => $(id).addEventListener("click", closePanel));
 
 voiceBtn.addEventListener("click", () => {
   voiceOn = !voiceOn;
@@ -196,40 +214,134 @@ duck.addEventListener("click", () => {
   }
 });
 
-$("export-btn").addEventListener("click", () => {
-  showHelp(false);
-  exportText.value = toMarkdown(session);
-  exportMsg.textContent = "";
-  exportBox.hidden = false;
+// ---- 編集 ----
+let editDate = null;
+let editFrom = null; // 閉じたときに戻る先（"calendar" か null）
+
+function openEditor(date, from) {
+  editDate = date;
+  editFrom = from;
+  $("editor-title").textContent = fmtDate(date) + "の朝会を編集";
+  editText.value = contentOf(getDay(date));
+  editMsg.textContent = "";
+  showPanel("editor");
+}
+
+$("edit-btn").addEventListener("click", () => (panel === "editor" ? closePanel() : openEditor(session.date, null)));
+
+$("editor-close").addEventListener("click", () => {
+  if (editText.value !== contentOf(getDay(editDate)) && !confirm("保存していない変更があります。閉じますか？")) return;
+  if (editFrom === "calendar") openCalendar(editDate);
+  else closePanel();
 });
 
-$("close-btn").addEventListener("click", () => {
-  exportBox.hidden = true;
+$("save-btn").addEventListener("click", () => {
+  putDay({ ...getDay(editDate), edited: editText.value });
+  editMsg.textContent = "保存しました";
+});
+
+$("regen-btn").addEventListener("click", () => {
+  if (!confirm("編集した内容を消して、会話の内容から作り直しますか？")) return;
+  const s = { ...getDay(editDate), edited: null };
+  putDay(s);
+  editText.value = toMarkdown(s);
+  editMsg.textContent = "会話の内容から作り直しました";
 });
 
 $("copy-btn").addEventListener("click", async () => {
   try {
-    await navigator.clipboard.writeText(exportText.value);
-    exportMsg.textContent = "コピーしました";
+    await navigator.clipboard.writeText(editText.value);
+    editMsg.textContent = "コピーしました";
   } catch (e) {
-    exportText.focus();
-    exportText.select();
-    exportText.setSelectionRange(0, exportText.value.length);
-    exportMsg.textContent = "選択された文字をコピーしてください";
+    editText.focus();
+    editText.select();
+    editText.setSelectionRange(0, editText.value.length);
+    editMsg.textContent = "選択された文字をコピーしてください";
   }
 });
 
 $("download-btn").addEventListener("click", () => {
-  const blob = new Blob([exportText.value], { type: "text/markdown;charset=utf-8" });
+  const blob = new Blob([editText.value], { type: "text/markdown;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = exportFilename(session);
+  a.download = exportFilename({ date: editDate });
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  exportMsg.textContent = "ダウンロードしました";
+  editMsg.textContent = "ダウンロードしました";
 });
+
+// ---- カレンダー ----
+let calY;
+let calM;
+let calSel;
+
+function openCalendar(date) {
+  [calY, calM] = date.split("-").map(Number);
+  selectDay(date);
+  showPanel("calendar");
+}
+
+function renderCalendar() {
+  $("cal-month").textContent = calY + "年" + calM + "月";
+  const today = localDateStr();
+  const saved = storage.listSessionDates();
+  const grid = $("cal-grid");
+  grid.textContent = "";
+  monthGrid(calY, calM).forEach((d) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    if (!d) {
+      b.className = "blank";
+      b.disabled = true;
+    } else {
+      b.textContent = Number(d.slice(8));
+      b.dataset.date = d;
+      b.disabled = d > today; // 未来の日は選べない
+      const s = saved.has(d) ? getDay(d) : null;
+      b.classList.toggle("has", !!s && hasContent(s));
+      b.classList.toggle("today", d === today);
+      b.classList.toggle("sel", d === calSel);
+      b.setAttribute("aria-label", fmtDate(d) + (s && hasContent(s) ? "（記録あり）" : ""));
+    }
+    grid.appendChild(b);
+  });
+}
+
+function selectDay(date) {
+  calSel = date;
+  const s = getDay(date);
+  $("day-title").textContent = fmtDate(date) + (date === localDateStr() ? "（今日）" : "");
+  // メモだけの日は、空のテンプレートではなく「記録はありません」と出す
+  const body = hasContent({ ...s, memo: "" }) ? contentOf(s) : "";
+  $("day-content").textContent = body || "記録はありません";
+  memoEl.value = s.memo || "";
+  $("day-msg").textContent = "";
+  renderCalendar();
+}
+
+$("cal-btn").addEventListener("click", () => (panel === "calendar" ? closePanel() : openCalendar(session.date)));
+
+$("cal-grid").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-date]");
+  if (b && !b.disabled) selectDay(b.dataset.date);
+});
+
+[["cal-prev", -1], ["cal-next", 1]].forEach(([id, delta]) =>
+  $(id).addEventListener("click", () => {
+    [calY, calM] = addMonth(calY, calM, delta);
+    renderCalendar();
+  })
+);
+
+$("memo-save").addEventListener("click", () => {
+  putDay({ ...getDay(calSel), memo: memoEl.value });
+  selectDay(calSel);
+  $("day-msg").textContent = "メモを保存しました";
+});
+
+$("day-edit").addEventListener("click", () => openEditor(calSel, "calendar"));
 
 // 開いたまま日付をまたいだら新しい日の朝会にする
 document.addEventListener("visibilitychange", () => {

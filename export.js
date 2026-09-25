@@ -20,6 +20,17 @@ export function toMarkdown(session) {
   return lines.join("\n") + "\n";
 }
 
+// その日の朝会の内容。自分で編集して保存したものを優先する
+export function contentOf(session) {
+  return session.edited != null ? session.edited : toMarkdown(session);
+}
+
+// カレンダーで印を付けるか（あいさつだけの日は付けない）
+export function hasContent(session) {
+  const a = session.answers || {};
+  return !!(session.edited || session.memo || a.yesterday || (a.today && a.today.length) || a.blocker || a.mood);
+}
+
 export function exportFilename(session) {
   return `asakai-${session.date}.md`;
 }

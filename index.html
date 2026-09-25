@@ -14,14 +14,16 @@
 <link rel="modulepreload" href="export.js">
 <link rel="modulepreload" href="storage.js">
 <link rel="modulepreload" href="voice.js">
+<link rel="modulepreload" href="calendar.js">
 </head>
 <body>
 <div class="app">
   <header class="bar">
     <h1 id="date">ひとり朝会</h1>
     <button type="button" id="voice-btn" aria-pressed="false" aria-label="音声の読み上げ" title="音声の読み上げ（オフ）">🔇</button>
+    <button type="button" id="cal-btn" aria-label="カレンダー" title="カレンダー">📅</button>
     <button type="button" id="help-btn">使い方</button>
-    <button type="button" id="export-btn">書き出し</button>
+    <button type="button" id="edit-btn">編集</button>
     <button type="button" id="reset-btn">やり直し</button>
   </header>
   <p id="notice" class="notice" hidden>このブラウザでは記録が保存されません</p>
@@ -38,18 +40,48 @@
       </svg>
     </button>
   </div>
-  <section id="export" class="export" hidden>
-    <div class="export-box">
-      <textarea id="export-text" rows="8" readonly aria-label="書き出す内容"></textarea>
+  <section id="editor" class="panel" hidden>
+    <div class="row">
+      <h2 id="editor-title">朝会を編集</h2>
+      <button type="button" id="editor-close">閉じる</button>
+    </div>
+    <p class="sub">保存した内容がこの日の朝会の記録になります。会話を続けても自動では書き換わりません。</p>
+    <div class="edit-box">
+      <textarea id="edit-text" aria-label="朝会の内容"></textarea>
       <button type="button" id="copy-btn">コピー</button>
     </div>
-    <p id="export-msg" class="export-msg" role="status"></p>
-    <div class="row">
+    <p id="edit-msg" class="msg-line" role="status"></p>
+    <div class="row wrap">
+      <button type="button" id="save-btn" class="primary">保存</button>
       <button type="button" id="download-btn">ダウンロード</button>
-      <button type="button" id="close-btn">閉じる</button>
+      <button type="button" id="regen-btn">会話から作り直す</button>
     </div>
   </section>
-  <section id="help" class="help" hidden>
+  <section id="calendar" class="panel" hidden>
+    <div class="row">
+      <h2>カレンダー</h2>
+      <button type="button" id="cal-close">閉じる</button>
+    </div>
+    <div class="row cal-nav">
+      <button type="button" id="cal-prev" aria-label="前の月">‹</button>
+      <h3 id="cal-month"></h3>
+      <button type="button" id="cal-next" aria-label="次の月">›</button>
+    </div>
+    <div class="cal-grid cal-week" aria-hidden="true"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+    <div id="cal-grid" class="cal-grid"></div>
+    <div id="day" class="day-detail">
+      <h3 id="day-title"></h3>
+      <pre id="day-content" class="day-content"></pre>
+      <label for="memo">メモ</label>
+      <textarea id="memo" rows="4" placeholder="この日のメモ"></textarea>
+      <p id="day-msg" class="msg-line" role="status"></p>
+      <div class="row wrap">
+        <button type="button" id="memo-save" class="primary">メモを保存</button>
+        <button type="button" id="day-edit">この日を編集</button>
+      </div>
+    </div>
+  </section>
+  <section id="help" class="panel help" hidden>
     <div class="row">
       <h2>使い方</h2>
       <button type="button" id="help-close">閉じる</button>
@@ -71,20 +103,27 @@
       <li>端末に入っている日本語の声だけを使い、文字を外部に送りません。日本語の声がない端末では、読み上げずに口だけ動きます</li>
       <li>オン／オフの設定はこのブラウザに保存されます</li>
     </ul>
-    <h3>書き出し</h3>
+    <h3>編集</h3>
     <ul>
-      <li>「書き出し」で今日の記録を Markdown で表示します</li>
+      <li>「編集」で今日の記録を Markdown で表示します。自由に書き換えて「保存」すると、それがこの日の朝会の記録になります</li>
+      <li>保存したあとは、会話を続けても記録は自動で書き換わりません。会話の内容に戻したいときは「会話から作り直す」を押します</li>
       <li>「コピー」でクリップボードへ。うまくいかないときは文字が選択された状態になるので、そのままコピーしてください</li>
       <li>「ダウンロード」で <code>asakai-日付.md</code> を保存します</li>
+    </ul>
+    <h3>カレンダーとメモ</h3>
+    <ul>
+      <li>📅 でカレンダーを開きます。記録のある日には点が付きます</li>
+      <li>日付を押すと、その日の朝会の内容が見られます。メモを書いて「メモを保存」できます</li>
+      <li>「この日を編集」で、過去の日の記録も書き換えられます</li>
     </ul>
     <h3>記録の保存</h3>
     <ul>
       <li>記録はこのブラウザの中（localStorage）にだけ保存され、どこにも送信されません</li>
       <li>朝会は1日1回。途中で閉じたりリロードしても続きから再開します</li>
       <li>前日の記録があれば、最初に「昨日の予定」を表示します</li>
-      <li>別の端末やブラウザとは共有されません。ブラウザの閲覧データを消すと記録も消えます。残したい日は書き出してください</li>
+      <li>別の端末やブラウザとは共有されません。ブラウザの閲覧データを消すと記録も消えます。残したい日は「編集」からダウンロードしてください</li>
       <li>プライベートブラウズなど保存できない環境では、画面上部にお知らせが出ます（朝会は最後まで進められます）</li>
-      <li>「やり直し」で今日の朝会を最初からやり直せます</li>
+      <li>「やり直し」で今日の会話を最初からやり直せます（編集した内容は消え、メモは残ります）</li>
     </ul>
     <p class="row"><button type="button" id="help-close2">閉じる</button></p>
   </section>
