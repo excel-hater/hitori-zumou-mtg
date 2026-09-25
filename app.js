@@ -4,6 +4,7 @@ import { EchoResponder } from "./responder.js";
 import { SAMPLE } from "./script.js";
 import { toMarkdown, exportFilename } from "./export.js";
 import * as storage from "./storage.js";
+import { createSpeaker } from "./voice.js";
 
 const $ = (id) => document.getElementById(id);
 const logEl = $("log");
@@ -21,6 +22,27 @@ const responder = new EchoResponder();
 let session;
 let busy = false;
 
+// 音声：初期はオフ。設定は hitori-asakai:settings に保存する
+const duck = $("duck");
+const voiceBtn = $("voice-btn");
+const talk = (on) => duck.classList.toggle("talking", on);
+let voiceOn = !!storage.loadSettings().voice;
+const updateVoiceNotice = () => ($("voice-notice").hidden = !voiceOn || speaker.hasVoice());
+const speaker = createSpeaker({ onStart: () => talk(true), onStop: () => talk(false), onVoices: updateVoiceNotice });
+const canSpeak = () => voiceOn && speaker.hasVoice();
+
+function updateVoice() {
+  voiceBtn.hidden = !speaker.supported;
+  voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
+  voiceBtn.setAttribute("aria-pressed", String(voiceOn));
+  voiceBtn.title = "音声の読み上げ（" + (voiceOn ? "オン" : "オフ") + "）";
+}
+
+function lastBotText() {
+  const m = session.log.filter((x) => x.who === "bot").pop();
+  return m ? m.text : "";
+}
+
 function bubble(who, text, extra, box = logEl) {
   const el = document.createElement("div");
   el.className = "msg " + who + (extra ? " " + extra : "");
@@ -36,9 +58,12 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function showBot(messages) {
   for (const text of messages) {
     const dots = bubble("bot", "…", "typing");
+    talk(true);
     await wait(300 + Math.random() * 200);
     dots.remove();
     bubble("bot", text);
+    talk(speaker.talking()); // 読み始めたら onStart で再び口が動く
+    if (canSpeak()) speaker.speak(text);
   }
 }
 
@@ -73,6 +98,7 @@ async function start() {
   logEl.textContent = "";
   exportBox.hidden = true;
   showHelp(false);
+  speaker.cancel();
   session.log.forEach((m) => bubble(m.who, m.text));
   updateInput();
   if (!session.log.length) await run("");
@@ -82,6 +108,9 @@ async function start() {
 async function send() {
   const text = input.value.trim();
   if (!text || busy || isDone(session)) return;
+  // タップ（Enter）の処理の中で呼ぶ。前の読み上げを止め、次の読み上げを許可させる
+  speaker.cancel();
+  if (canSpeak()) speaker.unlock();
   input.value = "";
   autosize();
   bubble("me", text);
@@ -129,6 +158,7 @@ function showHelp(open) {
   logEl.hidden = open;
   form.hidden = open;
   if (open) {
+    speaker.cancel();
     renderSample();
     exportBox.hidden = true;
     helpBox.scrollTop = 0;
@@ -144,6 +174,27 @@ $("help-btn").addEventListener("click", () => showHelp(helpBox.hidden));
     if (!isDone(session)) input.focus();
   })
 );
+
+voiceBtn.addEventListener("click", () => {
+  voiceOn = !voiceOn;
+  const settings = storage.loadSettings();
+  settings.voice = voiceOn;
+  storage.saveSettings(settings);
+  updateVoice();
+  speaker.cancel();
+  updateVoiceNotice();
+  // クリックの処理の中で読むので、最初の1回でも鳴る
+  if (canSpeak()) speaker.speak(lastBotText());
+});
+
+duck.addEventListener("click", () => {
+  speaker.cancel();
+  if (canSpeak()) speaker.speak(lastBotText());
+  else if (!busy) {
+    talk(true);
+    setTimeout(() => talk(false), 800);
+  }
+});
 
 $("export-btn").addEventListener("click", () => {
   showHelp(false);
@@ -182,7 +233,9 @@ $("download-btn").addEventListener("click", () => {
 
 // 開いたまま日付をまたいだら新しい日の朝会にする
 document.addEventListener("visibilitychange", () => {
+  if (document.hidden) speaker.cancel();
   if (!document.hidden && !busy && session && session.date !== localDateStr()) start();
 });
 
+updateVoice();
 start();
