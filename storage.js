@@ -47,6 +47,23 @@ function remove(key) {
 }
 
 export const isPersistent = () => persistent;
+
+// 記録のある日付の一覧（カレンダー用）
+export function listSessionDates() {
+  const head = "session:";
+  const keys = [...memory.keys()];
+  if (persistent) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(PREFIX)) keys.push(k.slice(PREFIX.length));
+      }
+    } catch (e) {
+      // 読めなければメモリ側だけ
+    }
+  }
+  return new Set(keys.filter((k) => k.startsWith(head)).map((k) => k.slice(head.length)));
+}
 export const loadSession = (date) => read("session:" + date);
 export const saveSession = (session) => write("session:" + session.date, session);
 export const removeSession = (date) => remove("session:" + date);
