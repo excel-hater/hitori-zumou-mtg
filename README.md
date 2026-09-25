@@ -16,6 +16,9 @@
 3. 最後に今日やることを復唱して終わります
 4. 「書き出し」から Markdown をコピー、またはダウンロード（`asakai-YYYY-MM-DD.md`）できます
 
+- 🔇 を押して 🔊 にすると、アヒルが口をパクパクさせながら質問を読み上げます（はじめはオフ。アヒルをタップするともう一度読みます）
+  - 端末に入っている日本語の声（macOS の Kyoko、Windows の Haruka など）だけを使い、文字を外部に送りません
+  - 日本語の声がない端末では、読み上げずに口だけ動きます
 - 「使い方」で会話の例と、書き出し・記録の保存についての説明を見られます
 - 1日1セッションです。途中でページを閉じたりリロードしても続きから再開します
 - 前日の記録があれば、最初に「昨日の予定」を表示します
@@ -25,7 +28,7 @@
 ## 特徴
 
 - ビルド不要の素の HTML / CSS / JavaScript（ES2020 まで、ES Modules）
-- 外部通信ゼロ（CDN・Web フォント・解析なし）。合計 約22KB
+- 外部通信ゼロ（CDN・Web フォント・解析なし）。合計 約28KB
 - 対応ブラウザ：iPadOS 15 以降の Safari、Chrome 100 以降
 
 ## ファイル構成
@@ -39,8 +42,9 @@
 | `script.js` | 朝会の質問定義と、使い方で見せる会話例の回答（データのみ） |
 | `responder.js` | 返答生成（`EchoResponder`） |
 | `storage.js` | localStorage ラッパ（使えなければメモリに退避） |
+| `voice.js` | 音声の読み上げ（端末内の日本語の声だけを使う） |
 | `export.js` | セッションを Markdown に変換 |
-| `test/core.test.js` | `node --test` 用のテスト |
+| `test/*.test.js` | `node --test` 用のテスト |
 
 返答は `respond(stepId, userText, session) -> string` を持つオブジェクトなら何でも差し替えられます（`app.js` の `responder`）。
 

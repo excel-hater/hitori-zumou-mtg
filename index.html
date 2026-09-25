@@ -13,21 +13,38 @@
 <link rel="modulepreload" href="responder.js">
 <link rel="modulepreload" href="export.js">
 <link rel="modulepreload" href="storage.js">
+<link rel="modulepreload" href="voice.js">
 </head>
 <body>
 <div class="app">
   <header class="bar">
     <h1 id="date">ひとり朝会</h1>
+    <button type="button" id="voice-btn" aria-pressed="false" aria-label="音声の読み上げ" title="音声の読み上げ（オフ）">🔇</button>
     <button type="button" id="help-btn">使い方</button>
     <button type="button" id="export-btn">書き出し</button>
     <button type="button" id="reset-btn">やり直し</button>
   </header>
   <p id="notice" class="notice" hidden>このブラウザでは記録が保存されません</p>
+  <p id="voice-notice" class="notice" hidden>この端末では日本語の音声が使えません</p>
+  <div class="stage">
+    <button type="button" id="duck" class="duck" aria-label="もう一度読む" title="もう一度読む">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <ellipse cx="30" cy="45" rx="24" ry="13" fill="#f7c948"/>
+        <ellipse cx="25" cy="43" rx="11" ry="6" fill="#e9b422"/>
+        <circle cx="40" cy="24" r="13" fill="#f7c948"/>
+        <circle cx="44" cy="20" r="2.3" fill="#222"/>
+        <path class="beak-low" d="M50 27L61 27Q58 32 50 31Z" fill="#d9661a"/>
+        <path d="M50 22Q60 21 62 26L50 28Z" fill="#f08a24"/>
+      </svg>
+    </button>
+  </div>
   <section id="export" class="export" hidden>
-    <textarea id="export-text" rows="8" readonly aria-label="書き出す内容"></textarea>
+    <div class="export-box">
+      <textarea id="export-text" rows="8" readonly aria-label="書き出す内容"></textarea>
+      <button type="button" id="copy-btn">コピー</button>
+    </div>
     <p id="export-msg" class="export-msg" role="status"></p>
     <div class="row">
-      <button type="button" id="copy-btn">コピー</button>
       <button type="button" id="download-btn">ダウンロード</button>
       <button type="button" id="close-btn">閉じる</button>
     </div>
@@ -46,6 +63,13 @@
       <li>Enter で送信、Shift+Enter で改行。送信ボタンでも送れます</li>
       <li>今日やることは3つまで。1行に1つか、「、」「,」で区切ります</li>
       <li>気分は 1〜5 の数字で答えます（全角でも大丈夫）</li>
+    </ul>
+    <h3>音声</h3>
+    <ul>
+      <li>🔇 を押すと 🔊 になり、アヒルが質問を読み上げます（もう一度押すとオフ）。はじめはオフです</li>
+      <li>アヒルをタップすると、最後の質問をもう一度読みます</li>
+      <li>端末に入っている日本語の声だけを使い、文字を外部に送りません。日本語の声がない端末では、読み上げずに口だけ動きます</li>
+      <li>オン／オフの設定はこのブラウザに保存されます</li>
     </ul>
     <h3>書き出し</h3>
     <ul>
